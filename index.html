@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PokeMMO Breed Planner</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="bg-grid" aria-hidden="true"></div>
+    <header class="hero">
+      <p class="kicker">GitHub Pages Ready</p>
+      <h1>PokeMMO Breeding Cost Planner</h1>
+      <p>
+        Plan IV lines, include hidden ability risk, compare buy-vs-breed paths,
+        and track real purchases against your expected cost.
+      </p>
+    </header>
+
+    <main class="layout">
+      <section class="card">
+        <h2>Target Build</h2>
+        <div class="field-grid">
+          <label>
+            Target Pokemon
+            <input id="targetName" type="text" placeholder="Example: Gible" />
+          </label>
+          <label>
+            Desired Nature
+            <input id="natureName" type="text" placeholder="Example: Jolly" />
+          </label>
+          <label>
+            Hidden Ability Needed
+            <select id="requireHA">
+              <option value="no">No</option>
+              <option value="yes">Yes</option>
+            </select>
+          </label>
+          <label>
+            Hidden Ability Inheritance Chance
+            <input id="haChance" type="number" min="1" max="100" value="60" />
+          </label>
+        </div>
+
+        <div class="stat-block">
+          <p class="subhead">Perfect IV Stats</p>
+          <div class="stat-grid">
+            <label><input type="checkbox" data-stat="HP" /> HP</label>
+            <label><input type="checkbox" data-stat="Atk" /> Atk</label>
+            <label><input type="checkbox" data-stat="Def" /> Def</label>
+            <label><input type="checkbox" data-stat="SpA" /> SpA</label>
+            <label><input type="checkbox" data-stat="SpD" /> SpD</label>
+            <label><input type="checkbox" data-stat="Spe" /> Spe</label>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Cost Inputs</h2>
+        <div class="field-grid">
+          <label>
+            Single 31 Breeder (market)
+            <input id="single31Market" type="number" min="0" value="18000" />
+          </label>
+          <label>
+            Single 31 Breeder (self source)
+            <input id="single31Self" type="number" min="0" value="12000" />
+          </label>
+          <label>
+            Single Hidden Ability Breeder (market)
+            <input id="singleHAMarket" type="number" min="0" value="40000" />
+          </label>
+          <label>
+            Single Hidden Ability Breeder (self source)
+            <input id="singleHASelf" type="number" min="0" value="28000" />
+          </label>
+          <label>
+            Nature Parent (market)
+            <input id="natureMarket" type="number" min="0" value="15000" />
+          </label>
+          <label>
+            Nature Parent (self source)
+            <input id="natureSelf" type="number" min="0" value="9000" />
+          </label>
+          <label>
+            Brace Cost (each)
+            <input id="braceCost" type="number" min="0" value="10000" />
+          </label>
+          <label>
+            Everstone Cost
+            <input id="everstoneCost" type="number" min="0" value="5500" />
+          </label>
+          <label>
+            Breeding Fee per Attempt
+            <input id="breedFee" type="number" min="0" value="5000" />
+          </label>
+          <label>
+            Optional Buy Price: Final HA Target
+            <input id="buyFinalHA" type="number" min="0" value="0" />
+          </label>
+        </div>
+
+        <p class="subhead">Optional market shortcuts by IV tier</p>
+        <div class="tier-grid" id="tierGrid"></div>
+      </section>
+
+      <section class="card">
+        <div class="row-between">
+          <h2>Optimization</h2>
+          <button id="calculateBtn">Calculate Cheapest Plan</button>
+        </div>
+        <div id="summary" class="summary"></div>
+        <div id="steps" class="steps"></div>
+      </section>
+
+      <section class="card">
+        <div class="row-between">
+          <h2>Breeding Tree</h2>
+          <button id="downloadPlanBtn">Download Plan JSON</button>
+        </div>
+        <div class="tree-wrap">
+          <svg id="treeSvg" aria-label="Breeding tree visualization"></svg>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="row-between">
+          <h2>Purchase Tracker</h2>
+          <button id="addPurchaseBtn">Add Purchase</button>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Item / Pokemon</th>
+                <th>Qty</th>
+                <th>Unit Cost</th>
+                <th>Total</th>
+                <th>Note</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="purchaseBody"></tbody>
+          </table>
+        </div>
+        <div id="purchaseSummary" class="summary"></div>
+      </section>
+    </main>
+
+    <footer>
+      <p>
+        Assumptions are editable and values are expected-value estimates for HA success.
+      </p>
+    </footer>
+
+    <script src="app.js"></script>
+  </body>
+</html>

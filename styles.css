@@ -1,0 +1,264 @@
+:root {
+  --bg-1: #f6f4ed;
+  --bg-2: #dcebe6;
+  --ink: #192224;
+  --ink-soft: #4b5a5f;
+  --card: rgba(255, 255, 255, 0.8);
+  --line: rgba(16, 53, 58, 0.18);
+  --accent: #0f8b8d;
+  --accent-2: #f4a261;
+  --ok: #2a9d8f;
+  --bad: #b44b3f;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Space Grotesk", sans-serif;
+  color: var(--ink);
+  background: radial-gradient(1200px 500px at 10% -5%, #fff8e8, transparent),
+    radial-gradient(800px 500px at 95% 10%, #d3efe8, transparent),
+    linear-gradient(145deg, var(--bg-1), var(--bg-2));
+  min-height: 100vh;
+}
+
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 42px 42px;
+  opacity: 0.22;
+}
+
+.hero {
+  position: relative;
+  padding: 3.5rem 1.25rem 1.5rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  animation: rise 560ms ease;
+}
+
+.kicker {
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  color: var(--accent);
+  margin-bottom: 0.45rem;
+}
+
+h1 {
+  margin: 0;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.05;
+}
+
+.hero p {
+  max-width: 62ch;
+  color: var(--ink-soft);
+}
+
+.layout {
+  position: relative;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem 1.25rem 3rem;
+  display: grid;
+  gap: 1rem;
+}
+
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  backdrop-filter: blur(8px);
+  padding: 1rem;
+  animation: rise 600ms ease;
+}
+
+h2 {
+  margin: 0 0 0.8rem;
+  font-size: 1.2rem;
+}
+
+.field-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 0.65rem;
+}
+
+label {
+  display: grid;
+  gap: 0.35rem;
+  font-size: 0.88rem;
+  color: var(--ink-soft);
+}
+
+input,
+select,
+button {
+  font: inherit;
+}
+
+input,
+select {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 0.55rem 0.6rem;
+  background: rgba(255, 255, 255, 0.9);
+  color: var(--ink);
+}
+
+button {
+  border: 0;
+  border-radius: 10px;
+  padding: 0.62rem 0.88rem;
+  background: linear-gradient(130deg, var(--accent), #137f75);
+  color: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+button:hover {
+  filter: brightness(1.03);
+}
+
+.subhead {
+  margin: 0.9rem 0 0.45rem;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.stat-grid,
+.tier-grid {
+  display: grid;
+  gap: 0.4rem;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.stat-grid label {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+  color: var(--ink);
+}
+
+.row-between {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+}
+
+.summary,
+.steps {
+  margin-top: 0.9rem;
+  display: grid;
+  gap: 0.5rem;
+}
+
+.metric {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  border-bottom: 1px dashed var(--line);
+  padding: 0.35rem 0;
+}
+
+.metric .label {
+  color: var(--ink-soft);
+}
+
+.metric .value {
+  font-weight: 700;
+  font-family: "IBM Plex Mono", monospace;
+}
+
+.step {
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--accent-2);
+  border-radius: 12px;
+  padding: 0.6rem;
+}
+
+.tree-wrap {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.76);
+  overflow-x: auto;
+}
+
+#treeSvg {
+  min-height: 340px;
+  width: 100%;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+th,
+td {
+  text-align: left;
+  border-bottom: 1px solid var(--line);
+  padding: 0.45rem;
+  font-size: 0.92rem;
+}
+
+td input {
+  width: 100%;
+}
+
+.small-btn {
+  padding: 0.38rem 0.55rem;
+  background: #e2674f;
+}
+
+.good {
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.bad {
+  color: var(--bad);
+  font-weight: 700;
+}
+
+footer {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 1.25rem 2rem;
+  color: var(--ink-soft);
+  font-size: 0.85rem;
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(6px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .row-between {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  h1 {
+    font-size: 1.9rem;
+  }
+}
