@@ -1,8 +1,8 @@
-const STORAGE_KEY = "pokemmoSimpleBreedPlanner.v2";
-const STAT_ORDER = ["HP", "Atk", "Def", "SpA", "SpD", "Spe"];
+const STORAGE_KEY = "pokemmoSimpleBreedPlanner.v3";
 
 const state = {
   pokemonNames: [],
+  speciesIndex: {},
   target: null,
   plan: null,
   shopping: [],
@@ -14,6 +14,7 @@ const els = {
   loadTargetBtn: document.getElementById("loadTargetBtn"),
   loadState: document.getElementById("loadState"),
   targetInfo: document.getElementById("targetInfo"),
+  partnerGallery: document.getElementById("partnerGallery"),
   requireHA: document.getElementById("requireHA"),
   haChance: document.getElementById("haChance"),
   natureName: document.getElementById("natureName"),
@@ -31,11 +32,46 @@ const els = {
 init();
 
 async function init() {
+  if (!validateElements()) {
+    return;
+  }
+
   bindEvents();
   loadPersistedInputs();
   renderTargetInfo();
   renderPlanSummary("Load a target Pokemon first.");
   await loadPokemonNames();
+}
+
+function validateElements() {
+  const required = [
+    "targetName",
+    "pokemonList",
+    "loadTargetBtn",
+    "loadState",
+    "targetInfo",
+    "partnerGallery",
+    "requireHA",
+    "haChance",
+    "natureName",
+    "braceCost",
+    "everstoneCost",
+    "breedFee",
+    "buildPlanBtn",
+    "planSummary",
+    "suggestedParents",
+    "shoppingBody",
+    "shoppingSummary",
+    "downloadPlanBtn",
+  ];
+
+  const missing = required.filter((key) => !els[key]);
+  if (!missing.length) {
+    return true;
+  }
+
+  console.error("Planner could not start. Missing elements:", missing.join(", "));
+  return false;
 }
 
 function bindEvents() {
@@ -48,13 +84,17 @@ function bindEvents() {
   els.buildPlanBtn.addEventListener("click", buildPlan);
 
   els.downloadPlanBtn.addEventListener("click", () => {
-    if (!state.plan) return;
+    if (!state.plan) {
+      return;
+    }
+
     const payload = {
       target: state.target,
       plan: state.plan,
       shopping: state.shopping,
       exportedAt: new Date().toISOString(),
     };
+
     downloadJson(payload, "pokemmo-shopping-plan.json");
   });
 
@@ -70,8 +110,10 @@ function bindEvents() {
 
 async function loadPokemonNames() {
   setLoadState("Loading Pokemon list...");
+
   const endpoint = "https://pokeapi.co/api/v2/pokemon-species?limit=1025";
   const response = await fetch(endpoint);
+
   if (!response.ok) {
     setLoadState("Could not load Pokemon list from PokeAPI.", true);
     return;
@@ -79,11 +121,30 @@ async function loadPokemonNames() {
 
   const data = await response.json();
   state.pokemonNames = data.results.map((p) => p.name).sort((a, b) => a.localeCompare(b));
+
+  data.results.forEach((entry) => {
+    const id = idFromResourceUrl(entry.url);
+    if (!id) {
+      return;
+    }
+
+    const normalized = normalizeName(entry.name);
+    state.speciesIndex[normalized] = {
+      id,
+      name: normalized,
+      sprite: spriteUrl(id),
+    };
+  });
+
   renderPokemonDatalist();
   setLoadState(`Loaded ${state.pokemonNames.length} species.`);
 }
 
 function renderPokemonDatalist() {
+  if (!els.pokemonList) {
+    return;
+  }
+
   els.pokemonList.innerHTML = "";
   state.pokemonNames.forEach((name) => {
     const option = document.createElement("option");
@@ -118,7 +179,9 @@ async function loadTargetData() {
   const partnerSuggestions = await fetchPartnerSuggestions(species.egg_groups.map((g) => g.name), rawName);
 
   state.target = {
+    id: pokemon.id,
     name: normalizeName(species.name),
+    sprite: pokemon.sprites.other["official-artwork"].front_default || pokemon.sprites.front_default,
     eggGroups,
     hiddenAbilities,
     genderRate: species.gender_rate,
@@ -127,24 +190,42 @@ async function loadTargetData() {
   };
 
   renderTargetInfo();
+  renderPartnerGallery();
   setLoadState(`Loaded ${state.target.name}.`);
   persistInputs();
 }
 
 async function fetchPartnerSuggestions(eggGroups, targetName) {
-  const all = new Set();
+  const all = new Map();
 
   for (const group of eggGroups) {
     const res = await fetch(`https://pokeapi.co/api/v2/egg-group/${encodeURIComponent(group)}`);
-    if (!res.ok) continue;
+    if (!res.ok) {
+      continue;
+    }
+
     const data = await res.json();
-    data.pokemon_species.slice(0, 40).forEach((entry) => {
-      const name = entry.name.toLowerCase();
-      if (name !== targetName) all.add(normalizeName(name));
+    data.pokemon_species.slice(0, 36).forEach((entry) => {
+      const raw = entry.name.toLowerCase();
+      if (raw === targetName) {
+        return;
+      }
+
+      const id = idFromResourceUrl(entry.url);
+      if (!id) {
+        return;
+      }
+
+      const normalized = normalizeName(raw);
+      all.set(normalized, {
+        id,
+        name: normalized,
+        sprite: spriteUrl(id),
+      });
     });
   }
 
-  return [...all].sort((a, b) => a.localeCompare(b)).slice(0, 20);
+  return [...all.values()].sort((a, b) => a.name.localeCompare(b.name)).slice(0, 20);
 }
 
 function buildPlan() {
@@ -176,16 +257,24 @@ function buildPlan() {
     breedFees: ivBreeds + natureBreeds + (wantHA ? haExpectedAttempts : 0),
   };
 
+  const baseSpeciesOptions = [
+    { id: state.target.id, name: state.target.name, sprite: state.target.sprite },
+    ...state.target.partnerSuggestions.slice(0, 8),
+  ];
+
   const parentRows = [];
   stats.forEach((stat) => {
     parentRows.push({
       key: `stat_${stat}`,
       kind: "pokemon",
-      label: `1x31 ${stat} breeder in ${state.target.eggGroups.join(" / ")}`,
+      label: `1x31 ${stat} breeder`,
       qty: 1,
       defaultCost: 0,
       status: "buy",
       note: "Any compatible species works",
+      speciesOptions: baseSpeciesOptions,
+      speciesName: baseSpeciesOptions[0].name,
+      sprite: baseSpeciesOptions[0].sprite,
     });
   });
 
@@ -193,11 +282,14 @@ function buildPlan() {
     parentRows.push({
       key: "nature_parent",
       kind: "pokemon",
-      label: `${nature} nature breeder in ${state.target.eggGroups.join(" / ")}`,
+      label: `${nature} nature parent`,
       qty: 1,
       defaultCost: 0,
       status: "buy",
       note: "Used with Everstone",
+      speciesOptions: baseSpeciesOptions,
+      speciesName: baseSpeciesOptions[0].name,
+      sprite: baseSpeciesOptions[0].sprite,
     });
   }
 
@@ -209,7 +301,10 @@ function buildPlan() {
       qty: haExpectedAttempts,
       defaultCost: 0,
       status: "buy",
-      note: "Expected quantity based on HA chance",
+      note: "Expected quantity from HA chance",
+      speciesOptions: baseSpeciesOptions,
+      speciesName: baseSpeciesOptions[0].name,
+      sprite: baseSpeciesOptions[0].sprite,
     });
   }
 
@@ -222,6 +317,7 @@ function buildPlan() {
       defaultCost: readNumber(els.braceCost, 0),
       status: "buy",
       note: "Expected count",
+      sprite: "",
     },
     {
       key: "item_everstone",
@@ -231,6 +327,7 @@ function buildPlan() {
       defaultCost: readNumber(els.everstoneCost, 0),
       status: "buy",
       note: "Expected count",
+      sprite: "",
     },
     {
       key: "item_fee",
@@ -240,11 +337,13 @@ function buildPlan() {
       defaultCost: readNumber(els.breedFee, 0),
       status: "buy",
       note: "Expected count",
+      sprite: "",
     },
   ];
 
   state.plan = {
     targetName: state.target.name,
+    targetSprite: state.target.sprite,
     stats,
     nature,
     wantHA,
@@ -253,13 +352,14 @@ function buildPlan() {
     hiddenAbilities: state.target.hiddenAbilities,
     itemCounts,
     notes: [
-      "This planner focuses on shopping clarity and expected costs.",
-      "Hidden ability rows use expected quantity (1 / chance).",
-      "Set status to Have to remove an entry from buy total.",
+      "Pick species per row from compatible options.",
+      "Set Status to Have for anything you already own.",
+      "HA rows use expected quantity based on your chance.",
     ],
   };
 
   state.shopping = mergeWithExistingShopping([...parentRows, ...itemRows], state.shopping);
+
   renderPlanSummary();
   renderSuggestedParents();
   renderShopping();
@@ -271,23 +371,34 @@ function mergeWithExistingShopping(rows, existing) {
 
   return rows.map((row) => {
     const old = existingMap.get(row.key);
-    if (!old) return row;
+    if (!old) {
+      return {
+        ...row,
+        unitCost: row.defaultCost,
+      };
+    }
 
-    return {
+    const merged = {
       ...row,
       unitCost: Number.isFinite(old.unitCost) ? old.unitCost : row.defaultCost,
       status: old.status || row.status,
       note: old.note || row.note,
+      speciesName: old.speciesName || row.speciesName,
     };
-  }).map((row) => ({
-    ...row,
-    unitCost: Number.isFinite(row.unitCost) ? row.unitCost : row.defaultCost,
-  }));
+
+    if (row.kind === "pokemon" && Array.isArray(row.speciesOptions)) {
+      const picked = row.speciesOptions.find((option) => option.name === merged.speciesName);
+      merged.sprite = picked ? picked.sprite : row.sprite;
+    }
+
+    return merged;
+  });
 }
 
 function renderTargetInfo() {
   if (!state.target) {
     els.targetInfo.innerHTML = '<div class="muted">Target details will appear here after loading.</div>';
+    els.partnerGallery.innerHTML = "";
     return;
   }
 
@@ -295,16 +406,39 @@ function renderTargetInfo() {
     ? state.target.hiddenAbilities.join(", ")
     : "No hidden ability listed";
 
-  const partners = state.target.partnerSuggestions.length
-    ? state.target.partnerSuggestions.slice(0, 12).join(", ")
-    : "No partner suggestions found";
+  const eggGroupChips = state.target.eggGroups
+    .map((group) => `<span class="chip">${escapeHtml(group)}</span>`)
+    .join("");
 
   els.targetInfo.innerHTML = `
-    <div class="metric"><span class="label">Target</span><span class="value">${escapeHtml(state.target.name)}</span></div>
-    <div class="metric"><span class="label">Egg Groups</span><span class="value">${escapeHtml(state.target.eggGroups.join(" / "))}</span></div>
-    <div class="metric"><span class="label">Hidden Ability</span><span class="value">${escapeHtml(haText)}</span></div>
-    <div class="metric"><span class="label">Suggested Compatible Parents</span><span class="value">${escapeHtml(partners)}</span></div>
+    <div class="target-hero">
+      <img class="sprite-lg" src="${escapeAttr(state.target.sprite)}" alt="${escapeAttr(state.target.name)}" />
+      <div>
+        <h3>${escapeHtml(state.target.name)}</h3>
+        <div class="chip-row">${eggGroupChips}</div>
+        <p class="inline-note">Hidden Ability: ${escapeHtml(haText)}</p>
+      </div>
+    </div>
   `;
+}
+
+function renderPartnerGallery() {
+  if (!state.target || !state.target.partnerSuggestions.length) {
+    els.partnerGallery.innerHTML = "";
+    return;
+  }
+
+  els.partnerGallery.innerHTML = state.target.partnerSuggestions
+    .slice(0, 12)
+    .map((partner) => {
+      return `
+        <article class="partner-card">
+          <img src="${escapeAttr(partner.sprite)}" alt="${escapeAttr(partner.name)}" loading="lazy" />
+          <span>${escapeHtml(partner.name)}</span>
+        </article>
+      `;
+    })
+    .join("");
 }
 
 function renderPlanSummary(overrideText) {
@@ -315,17 +449,17 @@ function renderPlanSummary(overrideText) {
   }
 
   const plan = state.plan;
-  if (!plan) return;
+  if (!plan) {
+    return;
+  }
 
   const totalBuy = computeTotals().buyTotal;
 
   els.planSummary.innerHTML = `
     <div class="metric"><span class="label">Target</span><span class="value">${escapeHtml(plan.targetName)}</span></div>
+    <div class="metric"><span class="label">Egg Groups</span><span class="value">${escapeHtml(plan.eggGroups.join(" / "))}</span></div>
     <div class="metric"><span class="label">Perfect Stats</span><span class="value">${escapeHtml(plan.stats.join(", "))}</span></div>
-    <div class="metric"><span class="label">Expected Brace Count</span><span class="value">${formatQty(plan.itemCounts.braces)}</span></div>
-    <div class="metric"><span class="label">Expected Everstones</span><span class="value">${formatQty(plan.itemCounts.everstones)}</span></div>
-    <div class="metric"><span class="label">Expected Breeding Fees</span><span class="value">${formatQty(plan.itemCounts.breedFees)}</span></div>
-    <div class="metric"><span class="label">Current Buy Total</span><span class="value">${money(totalBuy)}</span></div>
+    <div class="metric"><span class="label">Expected Buy Total</span><span class="value">${money(totalBuy)}</span></div>
   `;
 }
 
@@ -347,8 +481,12 @@ function renderShopping() {
     const tr = document.createElement("tr");
     const total = row.status === "have" ? 0 : row.qty * row.unitCost;
 
+    const needCell = row.kind === "pokemon"
+      ? renderPokemonNeedCell(row)
+      : `<div class="need-cell"><span class="item-dot"></span><div><strong>${escapeHtml(row.label)}</strong></div></div>`;
+
     tr.innerHTML = `
-      <td>${escapeHtml(row.label)}</td>
+      <td>${needCell}</td>
       <td><input type="number" step="0.01" min="0" data-k="qty" data-id="${row.key}" value="${row.qty}" /></td>
       <td><input type="number" min="0" data-k="unitCost" data-id="${row.key}" value="${row.unitCost}" /></td>
       <td>${money(total)}</td>
@@ -380,16 +518,47 @@ function renderShopping() {
   }
 }
 
+function renderPokemonNeedCell(row) {
+  const options = Array.isArray(row.speciesOptions)
+    ? row.speciesOptions
+        .map((option) => {
+          const selected = option.name === row.speciesName ? "selected" : "";
+          return `<option value="${escapeAttr(option.name)}" ${selected}>${escapeHtml(option.name)}</option>`;
+        })
+        .join("")
+    : "";
+
+  return `
+    <div class="need-cell">
+      <img src="${escapeAttr(row.sprite || state.target?.sprite || "")}" alt="${escapeAttr(row.speciesName || row.label)}" loading="lazy" />
+      <div>
+        <strong>${escapeHtml(row.label)}</strong>
+        <div class="small-line">Compatible group: ${escapeHtml(state.target ? state.target.eggGroups.join(" / ") : "-")}</div>
+        <select data-k="speciesName" data-id="${row.key}">${options}</select>
+      </div>
+    </div>
+  `;
+}
+
 function onShoppingEdit(event) {
   const id = event.target.dataset.id;
   const key = event.target.dataset.k;
   const row = state.shopping.find((r) => r.key === id);
-  if (!row) return;
+  if (!row) {
+    return;
+  }
 
   if (key === "qty" || key === "unitCost") {
     row[key] = Number(event.target.value) || 0;
   } else {
     row[key] = event.target.value;
+  }
+
+  if (key === "speciesName" && row.kind === "pokemon" && Array.isArray(row.speciesOptions)) {
+    const picked = row.speciesOptions.find((option) => option.name === row.speciesName);
+    if (picked) {
+      row.sprite = picked.sprite;
+    }
   }
 
   persistInputs();
@@ -406,6 +575,7 @@ function computeTotals() {
       haveCount += 1;
       return;
     }
+
     buyCount += 1;
     buyTotal += row.qty * row.unitCost;
   });
@@ -427,15 +597,20 @@ function readNumber(inputEl, fallback) {
   return Number.isFinite(value) ? value : fallback;
 }
 
-function formatQty(value) {
-  return Number.isInteger(value) ? String(value) : value.toFixed(2);
-}
-
 function normalizeName(name) {
   return name
     .split("-")
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(" ");
+}
+
+function idFromResourceUrl(url) {
+  const match = /\/(\d+)\/?$/.exec(url);
+  return match ? Number.parseInt(match[1], 10) : null;
+}
+
+function spriteUrl(id) {
+  return `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/${id}.png`;
 }
 
 function clamp(v, min, max) {
@@ -481,9 +656,12 @@ function persistInputs() {
 function loadPersistedInputs() {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
+    if (!raw) {
+      return;
+    }
 
     const data = JSON.parse(raw);
+
     els.targetName.value = data.targetName || "";
     els.requireHA.value = data.requireHA || "no";
     els.haChance.value = data.haChance || "60";
@@ -502,7 +680,11 @@ function loadPersistedInputs() {
     state.shopping = Array.isArray(data.shopping) ? data.shopping : [];
     state.plan = data.plan || null;
 
-    if (state.target) renderTargetInfo();
+    if (state.target) {
+      renderTargetInfo();
+      renderPartnerGallery();
+    }
+
     if (state.plan) {
       renderPlanSummary();
       renderSuggestedParents();

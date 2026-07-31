@@ -161,6 +161,77 @@ button:hover {
   color: var(--ink-soft);
 }
 
+.target-hero {
+  display: grid;
+  grid-template-columns: 92px 1fr;
+  gap: 0.8rem;
+  align-items: center;
+}
+
+.target-hero h3 {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.sprite-lg {
+  width: 92px;
+  height: 92px;
+  object-fit: contain;
+  border-radius: 14px;
+  background: linear-gradient(140deg, #fff8e5, #dceee8);
+  border: 1px solid var(--line);
+  padding: 0.35rem;
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 0.15rem 0.52rem;
+  font-size: 0.8rem;
+  color: var(--ink-soft);
+  background: rgba(255, 255, 255, 0.85);
+}
+
+.inline-note {
+  margin: 0.5rem 0 0;
+  color: var(--ink-soft);
+  font-size: 0.88rem;
+}
+
+.partner-grid {
+  margin-top: 0.75rem;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 0.45rem;
+}
+
+.partner-card {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.72);
+  padding: 0.35rem;
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  color: var(--ink-soft);
+}
+
+.partner-card img {
+  width: 54px;
+  height: 54px;
+  object-fit: contain;
+}
+
 .stat-grid label {
   display: flex;
   align-items: center;
@@ -227,6 +298,48 @@ td input {
   width: 100%;
 }
 
+.need-cell {
+  display: grid;
+  grid-template-columns: 52px 1fr;
+  gap: 0.45rem;
+  align-items: center;
+}
+
+.need-cell img {
+  width: 52px;
+  height: 52px;
+  object-fit: contain;
+  border-radius: 10px;
+  background: linear-gradient(140deg, #fdf6e6, #e5f3ed);
+  border: 1px solid var(--line);
+}
+
+.need-cell strong {
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.small-line {
+  font-size: 0.75rem;
+  color: var(--ink-soft);
+  margin-bottom: 0.2rem;
+}
+
+.need-cell select {
+  width: 100%;
+  padding: 0.28rem 0.45rem;
+  font-size: 0.82rem;
+}
+
+.item-dot {
+  width: 14px;
+  height: 14px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #f4a261, #0f8b8d);
+  display: inline-block;
+  margin-left: 16px;
+}
+
 .small-btn {
   padding: 0.38rem 0.55rem;
   background: #e2674f;
@@ -269,5 +382,14 @@ footer {
 
   h1 {
     font-size: 1.9rem;
+  }
+
+  .target-hero {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+
+  .need-cell {
+    grid-template-columns: 1fr;
   }
 }
