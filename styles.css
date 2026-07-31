@@ -398,6 +398,25 @@ td input {
   width: 100%;
 }
 
+td select {
+  width: 100%;
+}
+
+.gender-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.14rem 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+
+.gender-pill-na {
+  background: rgba(83, 98, 102, 0.16);
+  color: var(--ink-soft);
+}
+
 .need-cell {
   display: grid;
   grid-template-columns: 44px minmax(160px, 1fr);

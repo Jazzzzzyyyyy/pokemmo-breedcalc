@@ -434,79 +434,37 @@ function buildExtraCosts(costs, nature, wantHA, haChance, hiddenAbilityName) {
 }
 
 function buildShoppingRows(tree, extras, speciesOptions) {
-  const counts = {
-    singles: 0,
-    tierBuy: { 2: 0, 3: 0, 4: 0, 5: 0, 6: 0 },
+  const rows = [];
+
+  const usage = {
     braces: 0,
     fees: 0,
     everstones: 0,
   };
 
-  walkTree(tree, (node) => {
-    if (node.method === "leaf") {
-      counts.singles += 1;
-    } else if (node.method === "buy") {
-      counts.tierBuy[node.tier] += 1;
-    } else if (node.method === "breed") {
-      counts.braces += 2;
-      counts.fees += 1;
-    }
-  });
+  collectPokemonPurchases(tree, "female", rows, usage, speciesOptions, "root");
 
   extras.notes.forEach((note) => {
     if (note.startsWith("Nature lock")) {
-      counts.braces += 1;
-      counts.fees += 1;
-      counts.everstones += 1;
+      usage.braces += 1;
+      usage.fees += 1;
+      usage.everstones += 1;
     }
 
     if (note.startsWith("HA step")) {
       const match = /expected\s([0-9.]+)x/.exec(note);
       const qty = match ? Number.parseFloat(match[1]) : 1;
-      counts.braces += qty;
-      counts.fees += qty;
+      usage.braces += qty;
+      usage.fees += qty;
     }
   });
-
-  const rows = [];
-
-  rows.push({
-    key: "row_single31",
-    kind: "pokemon",
-    label: "1x31 breeders",
-    qty: counts.singles,
-    unitCost: readNumber(els.single31Cost, 0),
-    status: "buy",
-    note: "From chosen route",
-    speciesName: speciesOptions[0]?.name || "",
-    sprite: speciesOptions[0]?.sprite || "",
-    speciesOptions,
-  });
-
-  for (let tier = 2; tier <= 6; tier += 1) {
-    if (counts.tierBuy[tier] <= 0) {
-      continue;
-    }
-
-    rows.push({
-      key: `row_tier_${tier}`,
-      kind: "pokemon",
-      label: `${tier}x31 breeders (skip-step buys)`,
-      qty: counts.tierBuy[tier],
-      unitCost: readNumber(els[`tier${tier}Cost`], 0),
-      status: "buy",
-      note: "Bought directly",
-      speciesName: speciesOptions[0]?.name || "",
-      sprite: speciesOptions[0]?.sprite || "",
-      speciesOptions,
-    });
-  }
 
   rows.push({
     key: "row_brace",
     kind: "item",
     label: "Braces",
-    qty: counts.braces,
+    genderNeed: "n/a",
+    qty: usage.braces,
     unitCost: readNumber(els.braceCost, 0),
     status: "buy",
     note: "Expected count",
@@ -516,18 +474,20 @@ function buildShoppingRows(tree, extras, speciesOptions) {
     key: "row_fee",
     kind: "service",
     label: "Breeding fees",
-    qty: counts.fees,
+    genderNeed: "n/a",
+    qty: usage.fees,
     unitCost: readNumber(els.breedFee, 0),
     status: "buy",
     note: "Expected count",
   });
 
-  if (counts.everstones > 0) {
+  if (usage.everstones > 0) {
     rows.push({
       key: "row_everstone",
       kind: "item",
       label: "Everstones",
-      qty: counts.everstones,
+      genderNeed: "n/a",
+      qty: usage.everstones,
       unitCost: readNumber(els.everstoneCost, 0),
       status: "buy",
       note: "Expected count",
@@ -539,6 +499,7 @@ function buildShoppingRows(tree, extras, speciesOptions) {
       key: "row_nature_parent",
       kind: "pokemon",
       label: "Nature parent",
+      genderNeed: "either",
       qty: 1,
       unitCost: readNumber(els.natureParentCost, 0),
       status: "buy",
@@ -554,6 +515,7 @@ function buildShoppingRows(tree, extras, speciesOptions) {
       key: "row_ha_donor",
       kind: "pokemon",
       label: "HA donor",
+      genderNeed: "female",
       qty: 1 / clamp(readNumber(els.haChance, 60), 1, 100) * 100,
       unitCost: readNumber(els.haDonorCost, 0),
       status: "buy",
@@ -565,6 +527,38 @@ function buildShoppingRows(tree, extras, speciesOptions) {
   }
 
   return rows.filter((row) => row.qty > 0);
+}
+
+function collectPokemonPurchases(node, parentGenderNeed, rows, usage, speciesOptions, pathKey) {
+  if (node.method === "breed") {
+    usage.braces += 2;
+    usage.fees += 1;
+    collectPokemonPurchases(node.left, "female", rows, usage, speciesOptions, `${pathKey}_L`);
+    collectPokemonPurchases(node.right, "male", rows, usage, speciesOptions, `${pathKey}_R`);
+    return;
+  }
+
+  const isSingle = node.method === "leaf";
+  const label = isSingle
+    ? `1x31 ${node.stats.join("/")} breeder`
+    : `${node.tier}x31 ${node.stats.join("/")} breeder`;
+
+  const unitCost = isSingle ? readNumber(els.single31Cost, 0) : readNumber(els[`tier${node.tier}Cost`], 0);
+  const note = isSingle ? "Used as direct parent" : "Skip-step buy option";
+
+  rows.push({
+    key: `row_node_${pathKey}`,
+    kind: "pokemon",
+    label,
+    genderNeed: parentGenderNeed,
+    qty: 1,
+    unitCost,
+    status: "buy",
+    note,
+    speciesName: speciesOptions[0]?.name || "",
+    sprite: speciesOptions[0]?.sprite || "",
+    speciesOptions,
+  });
 }
 
 function mergeWithExistingShopping(rows, existingRows) {
@@ -580,6 +574,7 @@ function mergeWithExistingShopping(rows, existingRows) {
       ...row,
       qty: Number.isFinite(old.qty) ? old.qty : row.qty,
       unitCost: Number.isFinite(old.unitCost) ? old.unitCost : row.unitCost,
+      genderNeed: old.genderNeed || row.genderNeed,
       status: old.status || row.status,
       note: old.note || row.note,
       speciesName: old.speciesName || row.speciesName,
@@ -687,6 +682,13 @@ function treeNodeElement(node) {
   method.className = "tree-method";
   method.textContent = node.method === "breed" ? "Breed" : node.method === "buy" ? `Buy ${node.tier}x31` : "Buy 1x31";
 
+  if (node.method === "breed") {
+    const genderHint = document.createElement("div");
+    genderHint.className = "tree-method";
+    genderHint.textContent = "Left parent: Female | Right parent: Male";
+    card.appendChild(genderHint);
+  }
+
   const cost = document.createElement("div");
   cost.className = "tree-cost";
   cost.textContent = `Total: ${money(node.total)}`;
@@ -734,6 +736,7 @@ function renderShopping() {
 
     tr.innerHTML = `
       <td>${needCell}</td>
+      <td>${renderGenderCell(row)}</td>
       <td><input type="number" step="0.01" min="0" data-k="qty" data-id="${row.key}" value="${row.qty}" /></td>
       <td><input type="number" min="0" data-k="unitCost" data-id="${row.key}" value="${row.unitCost}" /></td>
       <td>${money(total)}</td>
@@ -758,6 +761,21 @@ function renderShopping() {
     <div class="metric"><span class="label">Buy rows</span><span class="value">${totals.buyCount}</span></div>
     <div class="metric"><span class="label">Have rows</span><span class="value">${totals.haveCount}</span></div>
     <div class="metric"><span class="label">Shopping total</span><span class="value">${money(totals.buyTotal)}</span></div>
+  `;
+}
+
+function renderGenderCell(row) {
+  if (row.kind !== "pokemon") {
+    return '<span class="gender-pill gender-pill-na">N/A</span>';
+  }
+
+  const current = row.genderNeed || "either";
+  return `
+    <select data-k="genderNeed" data-id="${row.key}">
+      <option value="female" ${current === "female" ? "selected" : ""}>Female</option>
+      <option value="male" ${current === "male" ? "selected" : ""}>Male</option>
+      <option value="either" ${current === "either" ? "selected" : ""}>Either</option>
+    </select>
   `;
 }
 
