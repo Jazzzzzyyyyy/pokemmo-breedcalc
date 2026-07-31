@@ -133,11 +133,32 @@ button:hover {
   color: var(--ink);
 }
 
+.top-gap {
+  margin-top: 0.9rem;
+}
+
 .stat-grid,
 .tier-grid {
   display: grid;
   gap: 0.4rem;
   grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+}
+
+.info-box {
+  margin-top: 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 0.55rem 0.65rem;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.load-state {
+  font-size: 0.9rem;
+  color: var(--ink-soft);
+}
+
+.muted {
+  color: var(--ink-soft);
 }
 
 .stat-grid label {
@@ -183,18 +204,6 @@ button:hover {
   border-left: 4px solid var(--accent-2);
   border-radius: 12px;
   padding: 0.6rem;
-}
-
-.tree-wrap {
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.76);
-  overflow-x: auto;
-}
-
-#treeSvg {
-  min-height: 340px;
-  width: 100%;
 }
 
 .table-wrap {

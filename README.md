@@ -1,22 +1,28 @@
-# PokeMMO Breed Planner
+# PokeMMO Breed Shopping Planner
 
-Static GitHub Pages app to plan and estimate PokeMMO breeding routes.
+Static GitHub Pages app focused on a simple workflow:
 
-## What It Does
+1. Select target Pokemon.
+2. Fetch egg groups and hidden ability data.
+3. Choose desired IV stats.
+4. Auto-generate a shopping list of breeders and required items.
+5. Assign costs and mark rows as `Buy` or `Have`.
 
-- Plans a breeding path for selected perfect IV stats.
-- Compares crafting tiers vs buying pre-built IV breeders.
-- Supports hidden ability expected-cost modeling.
-- Supports nature lock cost handling.
-- Renders a visual breeding tree.
-- Tracks real purchases and compares them against planned total cost.
-- Saves everything in localStorage so your plan persists between sessions.
+## Features
+
+- Fetches Pokemon species data from PokeAPI.
+- Displays target egg groups and hidden ability information.
+- Suggests compatible parent species from the same egg groups.
+- Builds a clear parent/item shopping list based on chosen IV stats.
+- Includes hidden ability expected-quantity handling via configured HA chance.
+- Lets you assign row-by-row costs and track buy total instantly.
+- Saves state in localStorage.
 
 ## Files
 
-- `index.html`: App UI layout.
-- `styles.css`: Visual design and responsive styling.
-- `app.js`: Optimizer logic, tree rendering, and purchase tracking.
+- `index.html`: Simplified guided workflow UI.
+- `styles.css`: Responsive styling.
+- `app.js`: Data fetch, planning logic, and shopping calculations.
 
 ## Local Run
 
@@ -42,6 +48,5 @@ The site will publish from this folder.
 
 ## Notes About Estimates
 
-- Hidden ability calculations use expected value based on your configured chance.
-- Item usage assumptions are shown in the app and can be tuned by changing input costs.
-- Market shortcuts by IV tier are optional and only used if they are cheaper.
+- Hidden ability rows use expected quantity with $1 / p$ where $p$ is HA chance.
+- Suggested parents are compatibility hints and should still be checked against your exact in-game strategy.
