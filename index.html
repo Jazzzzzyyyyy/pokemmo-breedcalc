@@ -72,6 +72,38 @@
 
         <div class="field-grid top-gap">
           <label>
+            1x31 Breeder Cost
+            <input id="single31Cost" type="number" min="0" value="18000" />
+          </label>
+          <label>
+            2x31 Breeder Cost (optional)
+            <input id="tier2Cost" type="number" min="0" value="0" />
+          </label>
+          <label>
+            3x31 Breeder Cost (optional)
+            <input id="tier3Cost" type="number" min="0" value="0" />
+          </label>
+          <label>
+            4x31 Breeder Cost (optional)
+            <input id="tier4Cost" type="number" min="0" value="0" />
+          </label>
+          <label>
+            5x31 Breeder Cost (optional)
+            <input id="tier5Cost" type="number" min="0" value="0" />
+          </label>
+          <label>
+            6x31 Breeder Cost (optional)
+            <input id="tier6Cost" type="number" min="0" value="0" />
+          </label>
+          <label>
+            Nature Parent Cost
+            <input id="natureParentCost" type="number" min="0" value="12000" />
+          </label>
+          <label>
+            Hidden Ability Donor Cost
+            <input id="haDonorCost" type="number" min="0" value="30000" />
+          </label>
+          <label>
             Brace Cost
             <input id="braceCost" type="number" min="0" value="10000" />
           </label>
@@ -88,10 +120,20 @@
 
       <section class="card">
         <div class="row-between">
-          <h2>3) Required Parents and Items</h2>
-          <button id="buildPlanBtn">Build Shopping Plan</button>
+          <h2>3) Family Tree Compare</h2>
+          <button id="buildPlanBtn">Build Tree + Compare Cost</button>
         </div>
         <div id="planSummary" class="summary"></div>
+        <div class="tree-compare-grid">
+          <article class="tree-panel">
+            <h3>All Individual Breeders</h3>
+            <div id="treeIndividual" class="family-tree"></div>
+          </article>
+          <article class="tree-panel">
+            <h3>Cheapest Mixed Route</h3>
+            <div id="treeOptimized" class="family-tree"></div>
+          </article>
+        </div>
         <div id="suggestedParents" class="steps"></div>
       </section>
 
